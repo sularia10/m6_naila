@@ -1,119 +1,91 @@
-// Función para pintar un tablero interactivo
-export function mostrarTableroInteractivo(idDiv, celdas, funcionClick, habilitarClick = true) {
-  const div = document.getElementById(idDiv);
-  div.innerHTML = ""; // Limpiar el contenido
+export function mostrarTaulerInteractiu(id, estat, funcioClick, permetreClick = true) {
+    const contenidor = document.getElementById(id);
+    contenidor.innerHTML = '';
+    contenidor.style.display = 'grid';
+    contenidor.style.gridTemplateColumns = `repeat(${estat[0].length}, 30px)`;
+    contenidor.style.gap = '2px';
 
-  div.setAttribute("role", "grid"); // Para accesibilidad
+    estat.forEach((fila, i) => {
+        fila.forEach((casella, j) => {
+            const div = document.createElement('div');
+            div.style.width = '30px';
+            div.style.height = '30px';
+            div.style.border = '1px solid #999';
+            
+            if (casella === 'aigua') {
+                div.style.backgroundColor = '#99ccff';
+            } else if (casella === 'X') {
+                div.style.backgroundColor = '#ff6666';
+            } else if (casella?.vaixell) {
+                div.style.backgroundColor = '#666666';
+            } else {
+                div.style.backgroundColor = '#eee';
+            }
 
-  // Recorremos las filas del tablero
-  for (let fila = 0; fila < celdas.length; fila++) {
-    const filaDiv = document.createElement("div");
-    filaDiv.style.display = "flex"; // Mostrar las celdas en fila
-    filaDiv.setAttribute("role", "row"); // Para accesibilidad
-    
-    // Recorremos las columnas de cada fila
-    for (let col = 0; col < celdas[fila].length; col++) {
-      const celda = document.createElement("div");
-      celda.style.width = "30px";
-      celda.style.height = "30px";
-      celda.style.border = "1px solid black";
-      celda.style.textAlign = "center";
-      celda.style.lineHeight = "30px";
-      celda.style.userSelect = "none"; // Evita seleccionar el texto
-      celda.style.cursor = habilitarClick ? "pointer" : "default"; // Si se puede hacer click, cambiar el cursor
-      celda.setAttribute("role", "gridcell"); // Para accesibilidad
-      celda.setAttribute("aria-label", `Celda ${fila},${col}`); // Etiqueta para accesibilidad
-
-      const valor = celdas[fila][col];
-      
-      // Dependiendo del valor, cambiar el estilo de la celda
-      if (valor === null) {
-        celda.style.backgroundColor = "lightblue"; // Agua sin disparar
-      } else if (valor === "agua") {
-        celda.style.backgroundColor = "blue";
-        celda.textContent = ""; // Celda de agua disparada
-      } else if (valor === "X") {
-        celda.style.backgroundColor = "red";
-        celda.textContent = "X"; // Marca de impacto
-      } else if (typeof valor === "object" && valor.barco) {
-        celda.style.backgroundColor = "gray"; // Barco visible para el jugador
-      }
-
-      // Si se habilita el click, añadir el evento
-      if (habilitarClick) {
-        celda.addEventListener("click", function() {
-          funcionClick(fila, col); // Llamamos a la función cuando se hace clic
+            if (permetreClick) {
+                div.style.cursor = 'pointer';
+                div.onclick = () => funcioClick(i, j);
+            }
+            
+            contenidor.appendChild(div);
         });
-      }
-
-      filaDiv.appendChild(celda); // Añadimos la celda a la fila
-    }
-    div.appendChild(filaDiv); // Añadimos la fila al div principal
-  }
+    });
 }
 
-// Función para mostrar los barcos y permitir su selección
-export function mostrarBarcosParaSeleccion(barcos, funcionSeleccion) {
-  const div = document.getElementById("barcos");
-  div.innerHTML = ""; // Limpiar el contenido previo
-  let selectedButton = null; // Variable para almacenar el botón seleccionado
+export function mostrarVaixellsPerSeleccio(vaixells, onSeleccio) {
+    const contenidor = document.getElementById('vaixells');
+    contenidor.innerHTML = '';
+    
+    vaixells.forEach(vaixell => {
+        const boto = document.createElement('button');
+        boto.textContent = `${vaixell.nom} (${vaixell.mida})`;
+        boto.style.margin = '5px';
+        boto.style.padding = '10px';
+        boto.style.backgroundColor = vaixell.color;
+        boto.style.color = 'white';
+        boto.style.border = 'none';
+        boto.style.borderRadius = '5px';
+        boto.onclick = () => onSeleccio(vaixell);
+        contenidor.appendChild(boto);
+    });
+}
 
-  // Crear un botón por cada barco
-  for (let i = 0; i < barcos.length; i++) {
-    const barco = barcos[i];
-    const btn = document.createElement("button");
-    btn.textContent = `${barco.name} (${barco.size})`; // Mostrar nombre y tamaño del barco
+export function mostrarMissatge(text, tipus = 'normal') {
+    const contenidor = document.getElementById('missatge');
+    
+    // Eliminar classes anteriors
+    contenidor.className = '';
+    contenidor.id = 'missatge';
+    
+    // Afegir classe segons el tipus de missatge
+    if (tipus === 'victoria') {
+        contenidor.classList.add('victoria');
+        text = `🎉 ${text} 🎉`;
+    } else if (tipus === 'derrota') {
+        contenidor.classList.add('derrota');
+        text = `💥 ${text} 💥`;
+    }
+    
+    contenidor.textContent = text;
+}
 
-    // Cuando se haga clic en un barco, lo seleccionamos
-    btn.onclick = function() {
-      if (selectedButton) selectedButton.style.backgroundColor = ""; // Desmarcar el anterior
-      btn.style.backgroundColor = "yellow"; // Resaltar el barco seleccionado
-      selectedButton = btn;
-      funcionSeleccion(barco); // Llamamos a la función de selección
+export function mostrarFormulariDispar(onDispar) {
+    const contenidor = document.getElementById('formulariDispar');
+    contenidor.innerHTML = `
+        <div style="margin: 10px">
+            <label>Fila (0-9): <input type="number" id="fila" min="0" max="9"></label>
+            <label>Columna (0-9): <input type="number" id="columna" min="0" max="9"></label>
+            <button id="disparar">Disparar</button>
+        </div>
+    `;
+
+    document.getElementById('disparar').onclick = () => {
+        const fila = parseInt(document.getElementById('fila').value);
+        const columna = parseInt(document.getElementById('columna').value);
+        if (fila >= 0 && fila < 10 && columna >= 0 && columna < 10) {
+            onDispar(fila, columna);
+        } else {
+            mostrarMissatge('Coordenades no vàlides');
+        }
     };
-    
-    div.appendChild(btn); // Añadir el botón al div
-  }
-}
-
-// Función para mostrar un mensaje en pantalla
-export function mostrarMensaje(texto) {
-  const div = document.getElementById("mensaje");
-  div.textContent = texto; // Cambiar el texto del div
-}
-
-// Función para mostrar el formulario para disparar
-export function mostrarFormularioDisparo(funcionDisparo) {
-  const div = document.getElementById("formularioDisparo");
-  div.innerHTML = `
-    <label for="inputFila">Fila:</label>
-    <input type="number" id="inputFila" placeholder="Fila (0-9)" min="0" max="9" style="width:60px;" />
-    <label for="inputCol">Columna:</label>
-    <input type="number" id="inputCol" placeholder="Columna (0-9)" min="0" max="9" style="width:60px;" />
-    <button id="botonDisparar">Disparar</button>
-  `;
-
-  const boton = document.getElementById("botonDisparar");
-  
-  // Cuando se haga clic en el botón disparar
-  boton.onclick = function() {
-    const inputFila = document.getElementById("inputFila");
-    const inputCol = document.getElementById("inputCol");
-    
-    // Obtener los valores de fila y columna
-    const fila = parseInt(inputFila.value);
-    const col = parseInt(inputCol.value);
-
-    // Verificar si las coordenadas son válidas
-    if (
-      Number.isInteger(fila) && fila >= 0 && fila < 10 &&
-      Number.isInteger(col) && col >= 0 && col < 10
-    ) {
-      funcionDisparo(fila, col); // Llamar a la función de disparo
-      inputFila.value = ""; // Limpiar el campo de fila
-      inputCol.value = ""; // Limpiar el campo de columna
-    } else {
-      mostrarMensaje("Coordenadas no válidas"); // Mostrar mensaje de error
-    }
-  };
 }

@@ -1,148 +1,236 @@
-import { Tablero, Barco } from "./modelo.js";
-import { barcosJSON } from "./barcos.js";
-import { mostrarTableroInteractivo, mostrarBarcosParaSeleccion, mostrarMensaje, mostrarFormularioDisparo } from "./vista.js";
+import { Tauler } from "./model.js";
+import { vaixellsJSON } from "./vaixells.js";
+import { mostrarTaulerInteractiu, mostrarVaixellsPerSeleccio, mostrarMissatge, mostrarFormulariDispar } from "./vista.js";
+import { desarPartida, carregarPartida, recuperaTaulersApi, llistarPartides } from './indexAPI.js';
 
-const filas = 10;
-const columnas = 10;
+const FILES = 10;
+const COLUMNES = 10;
 
-let tableroJugador = new Tablero(filas, columnas);
-let tableroIA = new Tablero(filas, columnas);
-tableroIA.colocarBarcosAleatorio(barcosJSON);
+export let taulerJugador = new Tauler(FILES, COLUMNES);
+export let taulerIA = new Tauler(FILES, COLUMNES);
+taulerIA.colocarVaixellsAleatoris(vaixellsJSON);
 
-let barcoSeleccionado = null;
-let colocados = 0;
+let vaixellSeleccionat = null;
+let vaixellsColocats = 0;
+let orientacioHoritzontal = true;
 
-const botonJugar = document.getElementById("jugar");
-botonJugar.disabled = true;
+const botoJugar = document.getElementById("jugar");
+botoJugar.disabled = true;
 
-function actualizarTableros() {
-  // Actualizamos tablero del jugador
-  let vistaJugador = [];
-  for (let i = 0; i < tableroJugador.celdas.length; i++) {
-    let filaVista = [];
-    for (let j = 0; j < tableroJugador.celdas[i].length; j++) {
-      let celda = tableroJugador.celdas[i][j];
-      if (celda.barco && !celda.disparado) filaVista.push({ barco: true });
-      else if (celda.barco && celda.disparado) filaVista.push("X");
-      else if (!celda.barco && celda.disparado) filaVista.push("agua");
-      else filaVista.push(null);
-    }
-    vistaJugador.push(filaVista);
-  }
+function actualitzarTaulers() {
+    const vistaJugador = taulerJugador.caselles.map(fila => 
+        fila.map(casella => {
+            if (casella.vaixell && !casella.disparat) return { vaixell: true };
+            if (casella.disparat) return casella.vaixell ? "X" : "aigua";
+            return null;
+        })
+    );
 
-  mostrarTableroInteractivo("jugador", vistaJugador, colocarBarcoClick, colocados < barcosJSON.length);
+    const vistaIA = taulerIA.caselles.map(fila =>
+        fila.map(casella => {
+            if (!casella.disparat) return null;
+            return casella.vaixell ? "X" : "aigua";
+        })
+    );
 
-  // Actualizamos tablero de la IA (solo disparos visibles)
-  let vistaIA = tableroIA.obtenerVistaOculta();
-  mostrarTableroInteractivo("ia", vistaIA, null, false);
+    mostrarTaulerInteractiu("jugador", vistaJugador, colocarVaixell, vaixellsColocats < vaixellsJSON.length);
+    mostrarTaulerInteractiu("ia", vistaIA, jugarTornJugador, vaixellsColocats === vaixellsJSON.length);
 }
 
-function colocarBarcoClick(fila, col) {
-  if (!barcoSeleccionado) {
-    mostrarMensaje("Primero selecciona un barco.");
-    return;
-  }
-  let barco = new Barco(barcoSeleccionado.name, barcoSeleccionado.size);
-  let exito = tableroJugador.colocarBarcoManual(barco, fila, col, horizontal);
-  if (exito) {
-    colocados++;
-    mostrarMensaje("Barco " + barco.nombre + " colocado.");
-    barcoSeleccionado = null; // deseleccionamos el barco
-    if (colocados === barcosJSON.length) {
-      mostrarMensaje("¡Todos los barcos colocados! Puedes jugar.");
-      botonJugar.disabled = false;
-      deshabilitarColocacion();
-      mostrarFormularioDisparo(jugarTurnoJugador);
+function colocarVaixell(fila, columna) {
+    if (!vaixellSeleccionat) {
+        mostrarMissatge("Si us plau, selecciona primer un vaixell");
+        return;
     }
-  } else {
-    mostrarMensaje("Posición no válida para ese barco.");
-  }
-  actualizarTableros();
+
+    const exitColocacio = taulerJugador.colocarVaixell(
+        fila, 
+        columna, 
+        vaixellSeleccionat, 
+        orientacioHoritzontal
+    );
+
+    if (exitColocacio) {
+        vaixellsColocats++;
+        vaixellSeleccionat = null;
+        actualitzarTaulers();
+
+        if (vaixellsColocats === vaixellsJSON.length) {
+            botoJugar.disabled = false;
+            mostrarMissatge("Tots els vaixells col·locats! Pots començar a jugar.");
+        }
+    } else {
+        mostrarMissatge("No es pot col·locar el vaixell aquí");
+    }
 }
 
-function deshabilitarColocacion() {
-  let tableroSoloBarcos = [];
-  for (let i = 0; i < tableroJugador.celdas.length; i++) {
-    let fila = [];
-    for (let j = 0; j < tableroJugador.celdas[i].length; j++) {
-      let celda = tableroJugador.celdas[i][j];
-      if (celda.barco) fila.push({ barco: true });
-      else if (celda.disparado) fila.push(celda.barco ? "X" : "agua");
-      else fila.push(null);
+async function jugarTornJugador(fila, columna) {
+    if (vaixellsColocats < vaixellsJSON.length) return;
+
+    const resultat = taulerIA.processarDispar(fila, columna);
+    if (!resultat) {
+        mostrarMissatge("Ja has disparat aquí!");
+        return;
     }
-    tableroSoloBarcos.push(fila);
-  }
-  mostrarTableroInteractivo("jugador", tableroSoloBarcos, null, false);
+
+    let missatge = "";
+    switch (resultat.tipus) {
+        case 'aigua':
+            missatge = "Aigua!";
+            break;
+        case 'tocat':
+            missatge = "Tocat!";
+            break;
+        case 'enfonsat':
+            missatge = `Has enfonsat el ${resultat.vaixell.tipus}!`;
+            break;
+    }
+
+    mostrarMissatge(missatge);
+    actualitzarTaulers();
+    
+    if (taulerIA.totsVaixellsEnfonsats()) {
+        mostrarMissatge("Has guanyat! Tots els vaixells enemics han estat enfonsats!");
+        return;
+    }
+
+    // Torn IA
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    jugarTornIA();
 }
 
-mostrarBarcosParaSeleccion(barcosJSON, function(barco) {
-  barcoSeleccionado = barco;
-  mostrarMensaje("Seleccionaste: " + barco.name);
-});
+function jugarTornIA() {
+    let fila, columna;
+    do {
+        fila = Math.floor(Math.random() * FILES);
+        columna = Math.floor(Math.random() * COLUMNES);
+    } while (taulerJugador.caselles[fila][columna].disparat);
 
-function jugarTurnoJugador(fila, col) {
-  let resultado = tableroIA.recibirDisparo(fila, col);
-  if (resultado === null) {
-    mostrarMensaje("Ya disparaste ahí. Elige otra posición.");
-    return;
-  }
-  actualizarTableros();
+    const resultat = taulerJugador.processarDispar(fila, columna);
+    let missatge = "L'IA ha disparat a " + `(${fila}, ${columna}): `;
+    
+    switch (resultat.tipus) {
+        case 'aigua':
+            missatge += "Aigua!";
+            break;
+        case 'tocat':
+            missatge += "Tocat!";
+            break;
+        case 'enfonsat':
+            missatge += `Ha enfonsat el teu ${resultat.vaixell.tipus}!`;
+            break;
+    }
 
-  if (resultado === "agua") {
-    mostrarMensaje("¡Agua! Ahora le toca a la IA.");
-    turnoIA();
-  } else if (resultado === "tocado") {
-    mostrarMensaje("¡Tocado! Puedes disparar otra vez.");
-  } else if (resultado === "hundido") {
-    mostrarMensaje("¡Hundido! Puedes disparar otra vez.");
-  }
+    mostrarMissatge(missatge);
+    actualitzarTaulers();
 
-  if (tableroIA.todosHundidos()) {
-    mostrarMensaje("¡Ganaste! Hundiste toda la flota enemiga.");
-    botonJugar.disabled = true;
-  }
+    if (taulerJugador.totsVaixellsEnfonsats()) {
+        mostrarMissatge("Has perdut! L'IA ha enfonsat tots els teus vaixells!");
+    }
 }
 
-function turnoIA() {
-  let dispararDeNuevo = true;
-  while (dispararDeNuevo) {
-    let coordenadas = tableroJugador.casillaAleatoriaNoDisparada();
-    let fila = coordenadas[0];
-    let col = coordenadas[1];
-    let resultado = tableroJugador.recibirDisparo(fila, col);
-    actualizarTableros();
+async function actualitzarLlistaPartides() {
+    const llistaPartides = document.getElementById('llista-partides');
+    
+    try {
+        const partides = await llistarPartides();
+        
+        if (!partides || partides.length === 0) {
+            llistaPartides.innerHTML = '<p>No hi ha partides desades</p>';
+            return;
+        }
 
-    if (resultado === "agua") {
-      mostrarMensaje("La IA disparó en " + fila + "," + col + ": Agua. Tu turno.");
-      dispararDeNuevo = false;
-    } else if (resultado === "tocado") {
-      mostrarMensaje("La IA disparó en " + fila + "," + col + ": Tocado. Sigue la IA.");
-    } else if (resultado === "hundido") {
-      mostrarMensaje("La IA disparó en " + fila + "," + col + ": Hundido. Sigue la IA.");
+        llistaPartides.innerHTML = partides.map(partida => `
+            <div class="targeta-partida">
+                <div class="info-partida">
+                    <span><strong>Jugador:</strong> ${partida.jugador}</span>
+                    <span><strong>ID:</strong> ${partida.id}</span>
+                </div>
+                <button class="boto-carregar" onclick="window.carregarPartidaDesada('${partida.id}')">
+                    Carregar Partida
+                </button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error al carregar llista de partides:', error);
+        mostrarMissatge('Error al carregar llista de partides');
     }
-    if (tableroJugador.todosHundidos()) {
-      mostrarMensaje("¡La IA ganó! Perdiste toda tu flota.");
-      botonJugar.disabled = true;
-      dispararDeNuevo = false;
-    }
-  }
 }
 
-botonJugar.onclick = function() {
-  mostrarMensaje("Comienza la partida. Introduce coordenadas y dispara.");
-  mostrarFormularioDisparo(jugarTurnoJugador);
+function inicialitzarControls() {
+    window.addEventListener("keydown", (event) => {
+        if (event.key.toLowerCase() === "h") {
+            orientacioHoritzontal = true;
+            mostrarMissatge("Orientació canviada a Horitzontal");
+        } else if (event.key.toLowerCase() === "v") {
+            orientacioHoritzontal = false;
+            mostrarMissatge("Orientació canviada a Vertical");
+        }
+    });
+
+    document.getElementById('desarPartida').addEventListener('click', async () => {
+        const nomJugador = prompt('Introdueix el teu nom:', 'Jugador1');
+        if (!nomJugador) return;
+
+        try {
+            const dadesPartida = {
+                jugador: nomJugador,
+                taulerJugador,
+                taulerIA
+            };
+
+            const idPartida = await desarPartida(dadesPartida);
+            mostrarMissatge(`Partida desada amb èxit. ID: ${idPartida}`);
+            await actualitzarLlistaPartides();
+        } catch (error) {
+            console.error('Error al desar:', error);
+            mostrarMissatge('Error al desar la partida');
+        }
+    });
+
+    document.getElementById('carregarPartida').addEventListener('click', async () => {
+        const id = prompt("Introdueix l'ID de la partida:");
+        if (!id) return;
+        
+        try {
+            await carregarPartidaDesada(id);
+        } catch (error) {
+            console.error('Error al carregar:', error);
+            mostrarMissatge('Error al carregar la partida');
+        }
+    });
+
+    mostrarVaixellsPerSeleccio(vaixellsJSON, vaixell => {
+        vaixellSeleccionat = vaixell;
+        mostrarMissatge(`Has seleccionat: ${vaixell.nom}`);
+    });
+}
+
+window.carregarPartidaDesada = async (id) => {
+    try {
+        const partida = await carregarPartida(id);
+        const { tableroJugador, tableroIA } = partida;
+        
+        taulerJugador = Tauler.fromJSON({ tableroJugador });
+        taulerIA = Tauler.fromJSON({ tableroIA });
+        
+        vaixellsColocats = taulerJugador.vaixells.length;
+        
+        if (vaixellsColocats === vaixellsJSON.length) {
+            document.getElementById('jugar').disabled = false;
+        }
+        
+        actualitzarTaulers();
+        mostrarMissatge(`Partida carregada correctament`);
+    } catch (error) {
+        console.error('Error al carregar:', error);
+        mostrarMissatge('Error al carregar la partida');
+    }
 };
 
-actualizarTableros();
-
-let horizontal = true;
-
-window.addEventListener("keydown", function(event) {
-  if (event.key.toLowerCase() === "h") {
-    horizontal = true;
-    mostrarMensaje("La orientación cambió a Horizontal.");
-  } else if (event.key.toLowerCase() === "v") {
-    horizontal = false;
-    mostrarMensaje("La orientación cambió a Vertical.");
-  }
+// Inicialitzar el joc
+document.addEventListener('DOMContentLoaded', () => {
+    inicialitzarControls();
+    actualitzarTaulers();
+    actualitzarLlistaPartides();
 });

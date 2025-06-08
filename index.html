@@ -1,71 +1,45 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="ca">
 <head>
-  <meta charset="UTF-8" />
-  <title>Hundir la Flota</title>
+    <meta charset="UTF-8" />
+    <title>Enfonsar la Flota</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <h1>Enfonsar la Flota</h1>
+    
+    <div id="instruccions-orientacio">
+        <strong>Instruccions:</strong><br>
+        Utilitza les tecles <kbd>H</kbd> per orientació <em>Horitzontal</em> i <kbd>V</kbd> per orientació <em>Vertical</em>
+    </div>
 
-  <h1>Hundir la Flota</h1>
+    <div id="vaixells"></div>
 
-  <!-- Instrucciones -->
-  <div id="instrucciones" style="margin: 10px; font-size: 14px; color: #333;">
-    <strong>Instrucciones:</strong><br>
-    Usa las teclas <kbd>H</kbd> para Horizontal y <kbd>V</kbd> para Vertical.
-  </div>
+    <div id="missatge"></div>
+    <div class="contenidor-joc">
+        <div class="contenidor-tauler">
+            <h2>El Teu Tauler</h2>
+            <div id="jugador"></div>
+        </div>
 
-  <!-- Div para los barcos -->
-  <div id="barcos"></div>
+        <div class="contenidor-tauler">
+            <h2>Tauler IA</h2>
+            <div id="ia"></div>
+        </div>
+    </div>
 
-  <div>
-    <h2>Tu Tablero</h2>
-    <div id="tablero-jugador"></div>
-  </div>
 
-  <div>
-    <h2>Tablero de la IA</h2>
-    <div id="tablero-ia"></div>
-  </div>
+    <div id="controls">
+        <button id="jugar" class="boto-principal" disabled>Jugar</button>
+        <button id="desarPartida" class="boto-principal">Desar Partida</button>
+        <button id="carregarPartida" class="boto-principal">Carregar Partida</button>
+    </div>
 
-  <div id="mensaje"></div>
+    <div id="partides-desades" class="partides-desades-contenidor">
+        <h3>Partides Desades</h3>
+        <div id="llista-partides" class="llista-partides"></div>
+    </div>
 
-  <div id="formulario-disparo"></div>
-
-  <!-- Botón para iniciar el juego -->
-  <button id="boton-jugar" disabled>Empezar Juego</button>
-
-  <script type="module">
-    // Variables para los tableros y el mensaje
-    let jugadorTablero = document.getElementById("tablero-jugador");
-    let iaTablero = document.getElementById("tablero-ia");
-    let mensaje = document.getElementById("mensaje");
-    let botonJugar = document.getElementById("boton-jugar");
-
-    // Función para mostrar un mensaje
-    function mostrarMensaje(texto) {
-      mensaje.innerHTML = texto;
-    }
-
-    // Activar el botón cuando los tableros están listos
-    function activarBotonJugar() {
-      if (jugadorTablero && iaTablero) {
-        botonJugar.disabled = false;
-      }
-    }
-
-    // Lógica para el juego (aquí se puede añadir más código después)
-    function empezarJuego() {
-      mostrarMensaje("¡El juego ha comenzado!");
-      // Código para iniciar el juego irá aquí
-    }
-
-    // Evento del botón para empezar el juego
-    botonJugar.addEventListener("click", empezarJuego);
-
-    // Activar el botón cuando todo esté listo
-    activarBotonJugar();
-
-  </script>
-
+    <script type="module" src="main.js"></script>
 </body>
 </html>
