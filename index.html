@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hundir la Flota</title>
+</head>
+<body>
+
+  <h1>Hundir la Flota</h1>
+
+  <!-- Instrucciones -->
+  <div id="instrucciones" style="margin: 10px; font-size: 14px; color: #333;">
+    <strong>Instrucciones:</strong><br>
+    Usa las teclas <kbd>H</kbd> para Horizontal y <kbd>V</kbd> para Vertical.
+  </div>
+
+  <!-- Div para los barcos -->
+  <div id="barcos"></div>
+
+  <div>
+    <h2>Tu Tablero</h2>
+    <div id="tablero-jugador"></div>
+  </div>
+
+  <div>
+    <h2>Tablero de la IA</h2>
+    <div id="tablero-ia"></div>
+  </div>
+
+  <div id="mensaje"></div>
+
+  <div id="formulario-disparo"></div>
+
+  <!-- Botón para iniciar el juego -->
+  <button id="boton-jugar" disabled>Empezar Juego</button>
+
+  <script type="module">
+    // Variables para los tableros y el mensaje
+    let jugadorTablero = document.getElementById("tablero-jugador");
+    let iaTablero = document.getElementById("tablero-ia");
+    let mensaje = document.getElementById("mensaje");
+    let botonJugar = document.getElementById("boton-jugar");
+
+    // Función para mostrar un mensaje
+    function mostrarMensaje(texto) {
+      mensaje.innerHTML = texto;
+    }
+
+    // Activar el botón cuando los tableros están listos
+    function activarBotonJugar() {
+      if (jugadorTablero && iaTablero) {
+        botonJugar.disabled = false;
+      }
+    }
+
+    // Lógica para el juego (aquí se puede añadir más código después)
+    function empezarJuego() {
+      mostrarMensaje("¡El juego ha comenzado!");
+      // Código para iniciar el juego irá aquí
+    }
+
+    // Evento del botón para empezar el juego
+    botonJugar.addEventListener("click", empezarJuego);
+
+    // Activar el botón cuando todo esté listo
+    activarBotonJugar();
+
+  </script>
+
+</body>
+</html>
